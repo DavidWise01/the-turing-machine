@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Turing Machines</title>
+<style>
+  :root{--bg:#08080f;--bg2:#0c0c18;--panel:#10101e;--panel2:#13131f;--line:#1f1f33;--line2:#2a2a42;--ink:#e7e7f0;--dim:#9a9ab5;--faint:#5e5e7a;--teal:#2dd4bf;--teal-d:#14b8a6;--teal-dd:#0d9488;--cyan:#5eead4;--amber:#fbbf24;--violet:#a78bfa;--blue:#60a5fa;--rose:#fb7185;--green:#86efac;}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:radial-gradient(1150px 800px at 80% -15%,rgba(45,212,191,.08),transparent 58%),radial-gradient(900px 640px at -8% 106%,rgba(96,165,250,.04),transparent 55%),var(--bg);color:var(--ink);font-family:'IBM Plex Sans',sans-serif;font-weight:300;min-height:100vh;padding:28px 22px 56px;-webkit-font-smoothing:antialiased}
+  .shell{max-width:1160px;margin:0 auto}
+  .kicker{font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.4em;text-transform:uppercase;color:var(--teal);margin-bottom:12px}
+  h1{font-family:'Spectral',serif;font-weight:300;font-size:clamp(26px,5vw,44px);letter-spacing:-.02em;line-height:1.04}
+  h1 em{font-style:italic;color:var(--teal)}
+  .sub{color:var(--dim);font-size:15px;margin-top:8px;max-width:790px}
+  .tabs{display:flex;gap:8px;margin-top:22px;flex-wrap:wrap}
+  .tab{font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--dim);padding:10px 15px;cursor:pointer;transition:.15s}
+  .tab:hover{border-color:var(--teal-d)} .tab.on{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.08)}
+  .pane{display:none;margin-top:18px}.pane.on{display:block}
+  .layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:18px;align-items:start}
+  @media(max-width:900px){.layout{grid-template-columns:1fr}}
+  .controls{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px}
+  .sec{font-family:'IBM Plex Mono',monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-bottom:10px}
+  .sec:not(:first-child){margin-top:15px}
+  .mlist{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+  .mlist button{font-family:'IBM Plex Mono',monospace;font-size:12px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--dim);padding:9px 10px;cursor:pointer;text-align:left}
+  .mlist button:hover{border-color:var(--teal-d)} .mlist button.on{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.1)}
+  .mlist button small{color:var(--faint);display:block;font-size:9.5px;margin-top:2px}
+  .btns{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap}
+  .btns button{flex:1;min-width:42px;font-family:'IBM Plex Mono',monospace;font-size:11px;border:1px solid var(--line);border-radius:8px;background:var(--panel2);color:var(--dim);padding:9px 4px;cursor:pointer}
+  .btns button:hover{border-color:var(--teal);color:var(--teal)}
+  .btns button.act{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,.1)}
+  .stat{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--dim);margin-top:13px;border:1px solid var(--line);border-radius:11px;padding:10px}
+  .stat .r{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dashed var(--line);gap:8px}
+  .stat .r:last-child{border:0} .stat .k{color:var(--faint)} .stat .v{color:var(--teal);text-align:right}
+  .stat .v.g{color:var(--green)} .stat .v.c{color:var(--cyan)} .stat .v.a{color:var(--amber)} .stat .v.r{color:var(--rose)}
+  .note{font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);line-height:1.55;margin-top:10px}
+  code{font-family:'IBM Plex Mono',monospace;color:var(--teal)}
+  .panel{background:#06060c;border:1px solid var(--line);border-radius:16px;position:relative;overflow:hidden;line-height:0}
+  .plabel{position:absolute;top:10px;left:14px;font-family:'IBM Plex Mono',monospace;font-size:10.5px;color:var(--faint);background:rgba(6,6,12,.4);padding:2px 6px;border-radius:4px;z-index:2}
+  canvas{display:block;width:100%;height:auto}
+  .tablewrap{padding:16px}
+  table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:12.5px}
+  th{color:var(--faint);font-weight:400;text-align:center;padding:8px 6px;border-bottom:1px solid var(--line);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+  td{text-align:center;padding:8px 6px;border-bottom:1px solid rgba(31,31,51,.5);color:#cfcfe0}
+  tr.active td{background:rgba(45,212,191,.14)}
+  td.st{color:var(--teal)}
+  footer{margin-top:24px;padding-top:22px;border-top:1px solid var(--line);color:var(--faint);font-family:'IBM Plex Mono',monospace;font-size:11.5px;line-height:1.9}
+  footer .seq{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  footer .seq span{padding:5px 12px;border:1px solid var(--line);border-radius:30px}
+  footer .seq .here{border-color:var(--teal);color:var(--teal)}
+</style>
+<meta name="author" content="David Lee Wise / ROOT0 / TriPod LLC">
+<meta name="license" content="https://creativecommons.org/licenses/by-nd/4.0/">
+</head>
+<body>
+<div class="shell">
+  <div>
+    <div class="kicker">Automata & Formal Languages · Instrument 04 · Turing Machines</div>
+    <h1>The whole of <em>computation</em></h1>
+    <p class="sub">Swap the stack for an unbounded tape the head can read, write, and move across both ways, and you reach the ceiling. A Turing machine can compute anything any computer can — it <em>is</em> the definition of computable. A handful of states, one tape, and the universe of algorithms opens up.</p>
+  </div>
+
+  <div class="tabs">
+    <div class="tab on" data-t="A">Run</div>
+    <div class="tab" data-t="B">Transition table</div>
+    <div class="tab" data-t="C">Space-time</div>
+    <div class="tab" data-t="D">Busy beaver & limits</div>
+  </div>
+
+  <!-- A -->
+  <div class="pane on" id="paneA">
+    <div class="layout">
+      <div class="controls">
+        <div class="sec">Machine</div>
+        <div class="mlist" id="mListA"></div>
+        <div class="sec">Input</div>
+        <div class="btns" id="aAlpha"></div>
+        <div class="btns"><button id="aStep">step ▸</button><button id="aPlay">play ▶</button><button id="aReset">reset</button></div>
+        <div class="stat" id="statA"></div>
+        <div class="note">A configuration is the tape, the head position, and the state. Each step reads the symbol under the head, then the transition <code>δ(state, read) = (write, move, next)</code> fires. Halt states (<code>H</code>, accept, reject) stop the machine.</div>
+      </div>
+      <div class="panel"><canvas id="cvA" height="430"></canvas><div class="plabel" id="aLab">tape</div></div>
+    </div>
+  </div>
+
+  <!-- B -->
+  <div class="pane" id="paneB">
+    <div class="layout">
+      <div class="controls">
+        <div class="sec">Machine</div>
+        <div class="mlist" id="mListB"></div>
+        <div class="btns"><button id="bStep">step ▸</button><button id="bPlay">play ▶</button><button id="bReset">reset</button></div>
+        <div class="stat" id="statB"></div>
+        <div class="note">The transition table <span style="color:var(--teal)">is</span> the program. The highlighted row is the rule firing right now — matched on the current state and the symbol under the head.</div>
+      </div>
+      <div class="panel"><div class="plabel" id="bLab">δ table</div><div class="tablewrap" id="bTable" style="margin-top:8px"></div></div>
+    </div>
+  </div>
+
+  <!-- C -->
+  <div class="pane" id="paneC">
+    <div class="layout">
+      <div class="controls">
+        <div class="sec">Machine</div>
+        <div class="mlist" id="mListC"></div>
+        <div class="stat" id="statC"></div>
+        <div class="note">Each row is the tape at one instant, time running downward; the <span style="color:var(--amber)">head</span> position is marked. This computation history makes the machine's logic visible — busy beavers trace strikingly intricate patterns before halting.</div>
+      </div>
+      <div class="panel"><canvas id="cvC" height="430"></canvas><div class="plabel" id="cLab">space-time diagram</div></div>
+    </div>
+  </div>
+
+  <!-- D -->
+  <div class="pane" id="paneD">
+    <div class="layout">
+      <div class="controls">
+        <div class="sec">The busy beaver function</div>
+        <div class="stat" id="statD"></div>
+        <div class="note">BB(n) asks: among all n-state machines that halt on a blank tape, what's the most steps (or 1s) any of them takes? The values explode beyond any pattern — and crucially, BB(n) is <span style="color:var(--rose)">uncomputable</span>: no algorithm can compute it for all n, because doing so would solve the halting problem.</div>
+      </div>
+      <div class="panel"><div class="plabel">how fast can small machines run?</div><div class="tablewrap" id="dContent" style="margin-top:8px"></div></div>
+    </div>
+  </div>
+
+  <footer>
+    <div class="seq">
+      <span>00 primer</span><span>01 finite automata</span><span>02 regular expressions</span><span>03 pushdown automata</span><span class="here">04 · Turing machines — you are here</span><span>05 hierarchy & limits</span>
+    </div>
+    TURING MACHINES · tape & head · transition table · computation history · busy beaver & uncomputability. Verified.
+  </footer>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);const TAU=Math.PI*2;
+const INC={'r,0':{w:'0',m:'R',n:'r'},'r,1':{w:'1',m:'R',n:'r'},'r,_':{w:'_',m:'L',n:'a'},'a,0':{w:'1',m:'L',n:'H'},'a,1':{w:'0',m:'L',n:'a'},'a,_':{w:'1',m:'L',n:'H'}};
+const FLIP={'f,0':{w:'1',m:'R',n:'f'},'f,1':{w:'0',m:'R',n:'f'},'f,_':{w:'_',m:'L',n:'H'}};
+const PAL={'q0,a':{w:'_',m:'R',n:'qAr'},'q0,b':{w:'_',m:'R',n:'qBr'},'q0,_':{w:'_',m:'R',n:'ACC'},'qAr,a':{w:'a',m:'R',n:'qAr'},'qAr,b':{w:'b',m:'R',n:'qAr'},'qAr,_':{w:'_',m:'L',n:'qAm'},'qAm,a':{w:'_',m:'L',n:'qBk'},'qAm,b':{w:'b',m:'L',n:'REJ'},'qAm,_':{w:'_',m:'R',n:'ACC'},'qBr,a':{w:'a',m:'R',n:'qBr'},'qBr,b':{w:'b',m:'R',n:'qBr'},'qBr,_':{w:'_',m:'L',n:'qBm'},'qBm,b':{w:'_',m:'L',n:'qBk'},'qBm,a':{w:'a',m:'L',n:'REJ'},'qBm,_':{w:'_',m:'R',n:'ACC'},'qBk,a':{w:'a',m:'L',n:'qBk'},'qBk,b':{w:'b',m:'L',n:'qBk'},'qBk,_':{w:'_',m:'R',n:'q0'}};
+const BB2={'A,0':{w:'1',m:'R',n:'B'},'A,1':{w:'1',m:'L',n:'B'},'B,0':{w:'1',m:'L',n:'A'},'B,1':{w:'1',m:'R',n:'H'}};
+const BB3={'A,0':{w:'1',m:'R',n:'B'},'A,1':{w:'1',m:'R',n:'H'},'B,0':{w:'0',m:'R',n:'C'},'B,1':{w:'1',m:'R',n:'B'},'C,0':{w:'1',m:'L',n:'C'},'C,1':{w:'1',m:'L',n:'A'}};
+const MACHINES={
+  inc:{name:'binary increment',desc:'n → n+1',trans:INC,start:'r',blank:'_',alpha:['0','1'],input:'1011',kind:'compute'},
+  flip:{name:'bit flip',desc:'complement every bit',trans:FLIP,start:'f',blank:'_',alpha:['0','1'],input:'10110',kind:'compute'},
+  pal:{name:'palindrome',desc:'accept iff palindrome',trans:PAL,start:'q0',blank:'_',alpha:['a','b'],input:'abba',kind:'recognize'},
+  bb2:{name:'busy beaver (2)',desc:'max activity · 2 states',trans:BB2,start:'A',blank:'0',alpha:[],input:'',kind:'bb'},
+  bb3:{name:'busy beaver (3)',desc:'max activity · 3 states',trans:BB3,start:'A',blank:'0',alpha:[],input:'',kind:'bb'}};
+const ORDER=['inc','flip','pal','bb2','bb3'];
+const HALT=new Set(['H','ACC','REJ']);
+let cur={key:'inc',input:MACHINES.inc.input,frames:[],lo:0,hi:0,idx:0,playing:false};
+function buildFrames(){const M=MACHINES[cur.key];const tape={};const inp=M.kind==='bb'?'':cur.input;for(let i=0;i<inp.length;i++)tape[i]=inp[i];let head=0,state=M.start,steps=0;const cap=2000;const frames=[];let lo=0,hi=Math.max(0,inp.length-1);
+  while(steps<=cap){const sym=tape[head]===undefined?M.blank:tape[head];const key=state+','+sym;const rule=HALT.has(state)?null:M.trans[key];lo=Math.min(lo,head);hi=Math.max(hi,head);frames.push({tape:Object.assign({},tape),head,state,key:HALT.has(state)?null:key,rule:rule||null});if(HALT.has(state)||!rule)break;tape[head]=rule.w;if(rule.m==='L')head--;else if(rule.m==='R')head++;state=rule.n;steps++;}
+  cur.frames=frames;cur.lo=lo;cur.hi=hi;cur.idx=0;}
+function cell(x,px,py,w,h,sym,blank,head){let fill='rgba(14,14,24,.5)',tc='#cfcfe0';if(sym==='1'){fill='rgba(45,212,191,.28)';tc='#2dd4bf';}else if(sym==='0'){fill=blank==='0'?'rgba(20,20,32,.55)':'rgba(60,60,80,.4)';tc='#7a7a92';}else if(sym==='_'){fill='rgba(12,12,20,.4)';tc='#3a3a52';sym='';}else{fill='rgba(45,55,70,.4)';tc='#e7e7f0';}x.fillStyle=fill;x.beginPath();x.roundRect(px+1,py+1,w-2,h-2,4);x.fill();if(head){x.strokeStyle='#fbbf24';x.lineWidth=2;x.beginPath();x.roundRect(px+1,py+1,w-2,h-2,4);x.stroke();}if(sym){x.fillStyle=tc;x.font=Math.min(16,w*0.5)+"px 'IBM Plex Mono'";x.textAlign='center';x.textBaseline='middle';x.fillText(sym,px+w/2,py+h/2);x.textBaseline='alphabetic';x.textAlign='left';}}
+
+/* ---- A: run ---- */
+const cvA=$('cvA'),xA=cvA.getContext('2d');
+function drawA(){const x=xA,W=cvA.width,H=cvA.height;x.clearRect(0,0,W,H);const M=MACHINES[cur.key];const f=cur.frames[cur.idx];const lo=cur.lo-1,hi=cur.hi+1,n=hi-lo+1;const cw=Math.min(46,(W-40)/n),ox=(W-cw*n)/2,cy=H/2-10;
+  for(let i=lo;i<=hi;i++){const sym=f.tape[i]===undefined?M.blank:f.tape[i];cell(x,ox+(i-lo)*cw,cy-26,cw,52,sym,M.blank,i===f.head);}
+  // head arrow
+  const hx=ox+(f.head-lo)*cw+cw/2;x.fillStyle='#fbbf24';x.beginPath();x.moveTo(hx,cy-34);x.lineTo(hx-6,cy-44);x.lineTo(hx+6,cy-44);x.fill();
+  // state badge
+  const halted=HALT.has(f.state);x.fillStyle=halted?(f.state==='REJ'?'#fb7185':'#86efac'):'#2dd4bf';x.font="15px 'IBM Plex Mono'";x.textAlign='center';x.fillText('state: '+f.state,W/2,cy+62);
+  // rule
+  if(f.rule){const r=f.rule;x.fillStyle='#9a9ab5';x.font="13px 'IBM Plex Mono'";x.fillText('δ('+f.state+', '+f.key.split(',')[1].replace('_','␣')+') = (write '+r.w.replace('_','␣')+', '+r.m+', '+r.n+')',W/2,cy+90);}
+  else{x.fillStyle=halted?'#86efac':'#9a9ab5';x.font="13px 'IBM Plex Mono'";x.fillText(halted?'■ halted':'no transition',W/2,cy+90);}
+  x.textAlign='left';
+  const last=cur.idx>=cur.frames.length-1;let result='';if(M.kind==='compute')result=f.tape&&last?Object.keys(f.tape).map(Number).sort((a,b)=>a-b).map(k=>f.tape[k]).join('').replace(/_/g,''):'';
+  $('aLab').textContent=halted?('halted in state '+f.state):'tape · '+M.name;
+  $('statA').innerHTML=`<div class="r"><span class="k">machine</span><span class="v c">${M.name}</span></div>
+  <div class="r"><span class="k">step</span><span class="v">${cur.idx} / ${cur.frames.length-1}</span></div>
+  <div class="r"><span class="k">state</span><span class="v ${halted?'g':''}">${f.state}</span></div>
+  ${M.kind!=='bb'?`<div class="r"><span class="k">input</span><span class="v">${cur.input||'ε'}</span></div>`:''}
+  ${M.kind==='compute'&&last?`<div class="r"><span class="k">output</span><span class="v g">${result}</span></div>`:''}
+  ${M.kind==='recognize'&&last?`<div class="r"><span class="k">verdict</span><span class="v ${f.state==='ACC'?'g':'r'}">${f.state==='ACC'?'ACCEPT ✓':'REJECT'}</span></div>`:''}
+  ${M.kind==='bb'&&last?`<div class="r"><span class="k">halted after</span><span class="v">${cur.frames.length-1} steps</span></div><div class="r"><span class="k">ones written</span><span class="v a">${Object.values(f.tape).filter(v=>v==='1').length}</span></div>`:''}`;}
+
+/* ---- B: table ---- */
+function tableHTML(M,activeKey){const rows=Object.keys(M.trans).sort();let h='<table><thead><tr><th>state</th><th>read</th><th>write</th><th>move</th><th>next</th></tr></thead><tbody>';
+  rows.forEach(k=>{const[st,sy]=k.split(',');const r=M.trans[k];const act=k===activeKey;h+=`<tr class="${act?'active':''}"><td class="st">${st}</td><td>${sy.replace('_','␣')}</td><td>${r.w.replace('_','␣')}</td><td>${r.m}</td><td class="st">${r.n}</td></tr>`;});
+  h+='</tbody></table>';return h;}
+function drawB(){const M=MACHINES[cur.key];const f=cur.frames[cur.idx];$('bTable').innerHTML=tableHTML(M,f.key);const halted=HALT.has(f.state);
+  $('bLab').textContent='δ table · '+M.name;
+  $('statB').innerHTML=`<div class="r"><span class="k">machine</span><span class="v c">${M.name}</span></div>
+  <div class="r"><span class="k">step</span><span class="v">${cur.idx} / ${cur.frames.length-1}</span></div>
+  <div class="r"><span class="k">current state</span><span class="v ${halted?'g':''}">${f.state}</span></div>
+  <div class="r"><span class="k">reading</span><span class="v a">${f.key?f.key.split(',')[1].replace('_','␣'):'—'}</span></div>
+  <div class="r"><span class="k">rule firing</span><span class="v" style="font-size:9.5px">${f.key||'(halt)'}</span></div>`;}
+
+/* ---- C: space-time ---- */
+const cvC=$('cvC'),xC=cvC.getContext('2d');
+function drawC(){const x=xC,W=cvC.width,H=cvC.height;x.clearRect(0,0,W,H);const M=MACHINES[cur.key];const F=cur.frames;const lo=cur.lo-1,hi=cur.hi+1,ncol=hi-lo+1;const nrow=F.length;
+  const cw=Math.min(30,(W-36)/ncol);const ch=Math.min(cw,(H-44)/Math.max(nrow,1));const ox=(W-cw*ncol)/2,oy=24;
+  for(let t=0;t<nrow;t++){const f=F[t];for(let i=lo;i<=hi;i++){const sym=f.tape[i]===undefined?M.blank:f.tape[i];const px=ox+(i-lo)*cw,py=oy+t*ch;let fill='rgba(14,14,24,.4)';if(sym==='1')fill='rgba(45,212,191,.55)';else if(sym==='0'&&M.blank==='0')fill='rgba(18,18,30,.5)';else if(sym!=='_'&&sym!=='0')fill='rgba(60,70,90,.5)';x.fillStyle=fill;x.fillRect(px,py,cw-0.6,ch-0.6);if(i===f.head){x.strokeStyle=t===cur.idx?'#fff':'rgba(251,191,36,.8)';x.lineWidth=t===cur.idx?1.6:1;x.strokeRect(px+0.5,py+0.5,cw-1.5,ch-1.5);}}}
+  // current row marker
+  x.fillStyle='#5e5e7a';x.font="10px 'IBM Plex Mono'";x.textAlign='left';x.fillText('t=0',4,oy+ch);x.fillText('↓ time',4,oy+Math.min(nrow,6)*ch);
+  $('cLab').textContent='space-time · '+M.name+' ('+(nrow-1)+' steps)';
+  $('statC').innerHTML=`<div class="r"><span class="k">machine</span><span class="v c">${M.name}</span></div>
+  <div class="r"><span class="k">total steps</span><span class="v">${nrow-1}</span></div>
+  <div class="r"><span class="k">tape cells shown</span><span class="v">${ncol}</span></div>
+  <div class="r"><span class="k">final state</span><span class="v g">${F[F.length-1].state}</span></div>`;}
+
+/* ---- D: busy beaver ---- */
+function drawD(){const r2=cur.key;// run bb2/bb3 fresh
+  function run(M){const tape={};let head=0,state=M.start,steps=0;while(!HALT.has(state)&&steps<10000){const sym=tape[head]===undefined?M.blank:tape[head];const rule=M.trans[state+','+sym];if(!rule)break;tape[head]=rule.w;if(rule.m==='L')head--;else head++;state=rule.n;steps++;}return {steps,ones:Object.values(tape).filter(v=>v==='1').length};}
+  const a=run(MACHINES.bb2),b=run(MACHINES.bb3);
+  const BBT=[['1','1','1'],['2','4','6'],['3','6','14'],['4','13','107'],['5','4098','47,176,870'],['6','> 10↑↑15','astronomical']];
+  let rows=BBT.map(([n,ones,steps])=>`<tr><td class="st">${n}</td><td>${ones}</td><td>${steps}</td></tr>`).join('');
+  $('dContent').innerHTML=`<table><thead><tr><th>states n</th><th>max ones Σ(n)</th><th>max steps S(n)</th></tr></thead><tbody>${rows}</tbody></table>
+  <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--faint);margin-top:16px;line-height:1.7">
+  verified here: BB(2) → <span style="color:var(--teal)">${a.steps} steps, ${a.ones} ones</span> · BB(3) → <span style="color:var(--teal)">${b.steps} steps, ${b.ones} ones</span><br><br>
+  Five tiny states already reach 47 million steps. Six is beyond astronomical. The growth outruns <span style="color:var(--amber)">every computable function</span> — so no program can tabulate Σ or S in general. If one could, you could decide whether any machine halts (run it; if it exceeds S(n), it never will). That impossibility is the <span style="color:var(--rose)">halting problem</span> — the subject of the finale.</div>`;}
+
+/* ---- machine selectors + input ---- */
+function mListHTML(){return ORDER.map(k=>`<button data-k="${k}" class="${k===cur.key?'on':''}">${MACHINES[k].name}<small>${MACHINES[k].desc}</small></button>`).join('');}
+function aAlphaBtns(){const M=MACHINES[cur.key];if(M.kind==='bb'){$('aAlpha').innerHTML='<span style="font-family:IBM Plex Mono;font-size:10px;color:var(--faint)">starts on a blank tape</span>';return;}$('aAlpha').innerHTML=M.alpha.map(c=>`<button class="asym" data-c="${c}">${c}</button>`).join('')+'<button id="aClr">clear</button>';document.querySelectorAll('.asym').forEach(b=>b.onclick=()=>{cur.input+=b.dataset.c;buildFrames();redraw();});const clr=$('aClr');if(clr)clr.onclick=()=>{cur.input='';buildFrames();redraw();};}
+function selectMachine(k){cur.key=k;cur.input=MACHINES[k].kind==='bb'?'':MACHINES[k].input;buildFrames();['mListA','mListB','mListC'].forEach(id=>{$(id).querySelectorAll('button').forEach(z=>z.classList.toggle('on',z.dataset.k===k));});aAlphaBtns();redraw();}
+function bindList(id){$(id).innerHTML=mListHTML();$(id).querySelectorAll('button').forEach(b=>b.onclick=()=>selectMachine(b.dataset.k));}
+
+/* ---- tabs + step ---- */
+let active='A';
+function redraw(){if(active==='A')drawA();else if(active==='B')drawB();else if(active==='C')drawC();else drawD();}
+function stepFn(){cur.idx=Math.min(cur.idx+1,cur.frames.length-1);}
+function showTab(tb){active=tb;document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x.dataset.t===tb));document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));$('pane'+tb).classList.add('on');layout();}
+document.querySelectorAll('.tab').forEach(b=>b.onclick=()=>showTab(b.dataset.t));
+$('aStep').onclick=()=>{if(cur.idx>=cur.frames.length-1)cur.idx=0;stepFn();drawA();};
+$('aReset').onclick=()=>{cur.idx=0;cur.playing=false;$('aPlay').classList.remove('act');$('aPlay').textContent='play ▶';drawA();};
+$('aPlay').onclick=()=>{cur.playing=!cur.playing;$('aPlay').classList.toggle('act',cur.playing);$('aPlay').textContent=cur.playing?'pause ⏸':'play ▶';if(cur.playing&&cur.idx>=cur.frames.length-1)cur.idx=0;};
+$('bStep').onclick=()=>{if(cur.idx>=cur.frames.length-1)cur.idx=0;stepFn();drawB();};
+$('bReset').onclick=()=>{cur.idx=0;cur.playing=false;$('bPlay').classList.remove('act');$('bPlay').textContent='play ▶';drawB();};
+$('bPlay').onclick=()=>{cur.playing=!cur.playing;$('bPlay').classList.toggle('act',cur.playing);$('bPlay').textContent=cur.playing?'pause ⏸':'play ▶';if(cur.playing&&cur.idx>=cur.frames.length-1)cur.idx=0;};
+function sz(c,h){c.width=Math.max(340,c.parentElement.clientWidth);c.height=h;}
+function layout(){if(active==='A'){sz(cvA,430);drawA();}if(active==='B'){drawB();}if(active==='C'){sz(cvC,430);drawC();}if(active==='D'){drawD();}}
+window.addEventListener('resize',()=>{clearTimeout(window._rl);window._rl=setTimeout(layout,200);});
+bindList('mListA');bindList('mListB');bindList('mListC');aAlphaBtns();buildFrames();
+let af=0;function loop(){af++;if(cur.playing&&(active==='A'||active==='B')){if(af%22===0){if(cur.idx>=cur.frames.length-1){cur.playing=false;document.querySelectorAll('#aPlay,#bPlay').forEach(b=>{b.classList.remove('act');b.textContent='play ▶';});}else{stepFn();redraw();}}}requestAnimationFrame(loop);}
+layout();loop();
+</script>
+<footer style="max-width:1180px;margin:36px auto 0;padding:16px 2px;border-top:1px solid #1f1f33;font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.04em;color:#5e5e7a">THE TURING MACHINE &middot; a EDUCATIONAL sphere of UD0 &middot; David Lee Wise (ROOT0) &middot; CC-BY-ND-4.0 &middot; <a style="color:#8f8ac0" href="https://davidwise01.github.io/ud0/">the domains</a></footer>
+</body>
+</html>
